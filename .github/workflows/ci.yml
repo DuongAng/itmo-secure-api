@@ -25,7 +25,7 @@ jobs:
           cat bandit-report.txt
       - name: SCA - pip-audit (dependency vulnerabilities)
         run: |
-          pip-audit --desc -f columns -o pip-audit-report.txt || true
+          pip-audit -r requirements.txt --no-deps --desc -f columns -o pip-audit-report.txt || true
           cat pip-audit-report.txt
       - name: Run tests
         env:
