@@ -1,0 +1,54 @@
+# ВАЖНО: при создании GitHub-репозитория переместите этот файл по пути:
+#   .github/workflows/ci.yml
+# (папку .github нельзя записать через мост, поэтому файл лежит здесь).
+name: CI Security Pipeline
+
+# Проверки запускаются автоматически при каждом push и при создании pull request.
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  security-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install bandit pip-audit pytest
+
+      # --- SAST: статический анализ исходного кода (OWASP A03, A07 и др.) ---
+      - name: SAST — Bandit (static code analysis)
+        run: bandit -r . -x ./tests -f txt -o bandit-report.txt
+        continue-on-error: false
+
+      # --- SCA: анализ зависимостей на известные уязвимости (CVE) ---
+      - name: SCA — pip-audit (dependency vulnerabilities)
+        run: pip-audit -r requirements.txt --desc -o pip-audit-report.txt -f columns
+        continue-on-error: false
+
+      # --- Функциональные тесты + тесты безопасности ---
+      - name: Run tests
+        env:
+          JWT_SECRET: ci-test-secret-string-at-least-32-bytes-long
+        run: pytest -q
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.txt
+            pip-audit-report.txt
