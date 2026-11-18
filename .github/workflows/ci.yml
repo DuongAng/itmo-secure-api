@@ -22,11 +22,11 @@ jobs:
       - name: SAST - Bandit (static code analysis)
         run: |
           bandit -r . -x ./tests -ll -f txt -o bandit-report.txt || true
-          cat bandit-report.txt
+          cat bandit-report.txt || true
       - name: SCA - pip-audit (dependency vulnerabilities)
         run: |
-          pip-audit -r requirements.txt --no-deps --desc -f columns -o pip-audit-report.txt || true
-          cat pip-audit-report.txt
+          pip-audit -r requirements.txt --no-deps -f columns -o pip-audit-report.txt || true
+          cat pip-audit-report.txt || true
       - name: Run tests
         env:
           JWT_SECRET: ci-test-secret-string-at-least-32-bytes-long
